@@ -1,0 +1,56 @@
+version: '3.0'
+
+services:
+  backend:
+    platform: linux/amd64
+    image: openjdk:19-alpine
+    volumes:
+      - ./backend:/app
+    working_dir: /app
+    ports:
+      - 8080:8080
+    command:
+      [
+        "java",
+        "-jar",
+        "/app/meal-queen-0.0.1-SNAPSHOT.jar",
+        "--spring.config.location=file:/app/resources/main/"
+      ]
+    networks:
+      - backend
+
+  mysql:
+    image: mysql
+    ports:
+      - 3306:3306
+    restart: always
+    volumes:
+      - /mnt/docker-volumes/mysql/data:/var/lib/mysql
+      - /mnt/docker-volumes/mysql/init:/docker-entrypoint-initdb.d
+    environment:
+      - "MYSQL_ROOT_PASSWORD=${MYSQL_PASSWORD}"
+      - "TZ=${MYSQL_TZ}"
+      - MYSQL_DATABASE=mealQueen
+    networks:
+      - backend
+
+  caddy:
+    image: caddy:latest
+    container_name: caddy
+    restart: always
+    environment:
+      - TZ=Asia/Seoul
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - /mnt/docker-volumes/caddy/CaddyFile:/etc/caddy/Caddyfile
+      - /mnt/docker-volumes/caddy/data:/data
+      - /mnt/docker-volumes/caddy/config:/config
+    networks:
+      - web
+      - backend
+
+networks:
+  web:
+  backend:
